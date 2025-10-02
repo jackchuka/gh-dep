@@ -5,6 +5,8 @@
 
 A GitHub CLI extension that streamlines the review and merge workflow for automated dependency update PRs.
 
+![gh-dep demo](demo.gif)
+
 ## Features
 
 - 🖥️ **Interactive TUI**: Full-featured terminal UI with keyboard navigation and live settings adjustment
