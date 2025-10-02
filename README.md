@@ -1,9 +1,13 @@
 # gh-dep
 
+[![Test](https://github.com/jackchuka/gh-dep/workflows/Test/badge.svg)](https://github.com/jackchuka/gh-dep/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jackchuka/gh-dep)](https://goreportcard.com/report/github.com/jackchuka/gh-dep)
+
 A GitHub CLI extension that streamlines the review and merge workflow for automated dependency update PRs.
 
 ## Features
 
+- 🖥️ **Interactive TUI**: Full-featured terminal UI with keyboard navigation and live settings adjustment
 - 📋 **List** dependency PRs by label/author with clean table output
 - 📦 **Group** PRs by `package@version` for easier batched review
 - ✅ **Bulk approve** all PRs for a chosen group
@@ -45,6 +49,32 @@ gh extension install .
 
 ## Quick Start
 
+### Interactive Mode (Recommended)
+
+```bash
+# Launch interactive TUI for a single repo
+gh dep --repo owner/app
+
+# Or for an entire organization
+gh dep --owner myorg
+```
+
+**In the TUI, you can:**
+
+- Navigate with `↑/↓` or `j/k`
+- Select PRs with `space` or `a` (select all)
+- Toggle action mode with `m` (Approve → Merge → Approve & Merge)
+- Adjust merge settings on-the-fly:
+  - `M` - Toggle merge method (squash → merge → rebase)
+  - `D` - Toggle merge mode (dependabot → api)
+  - `c` - Toggle CI checks requirement
+- Search PRs with `/`
+- Open current PR in browser with `o`
+- Execute selected actions with `x`
+- View help with `?`
+
+### CLI Mode
+
 ```bash
 # List and group dependency PRs in a single repo
 gh dep list --repo owner/app --group
@@ -77,6 +107,49 @@ gh dep merge --group lodash@4.17.21 --mode api --method squash --require-checks
 
 ### Commands
 
+#### Main Command - Interactive TUI (Recommended)
+
+```bash
+gh dep [flags]
+```
+
+Launch an interactive terminal UI for managing dependency PRs with:
+
+- **Multi-select**: Use `space` to toggle, `a` to select all, `d` to deselect all
+- **Navigation**: `↑/↓` or `j/k` to move, `o` to open PR in browser
+- **Search**: Press `/` to filter PRs by title, repo, or number
+- **Live Settings**: Toggle execution mode and merge settings without restarting
+  - `m` - Action mode (Approve → Merge → Approve & Merge)
+  - `M` - Merge method (squash → merge → rebase)
+  - `D` - Merge mode (dependabot → api)
+  - `c` - CI checks requirement
+- **Execute**: Press `x` to run selected actions with real-time feedback
+- **Help**: Press `?` to view all keyboard shortcuts
+
+**Flags:**
+
+- `--author` - PR author to filter (default: `dependabot[bot]`, use `any` for all)
+- `--label` - PR label to filter
+- `--limit` - Max PRs to fetch per repo (default: 200)
+- `--repo` / `-R` - Target repo(s), comma-separated
+- `--owner` - Target all repos in an organization
+- `--merge-method` - Initial merge method (default: `squash`)
+- `--merge-mode` - Initial merge mode (default: `dependabot`)
+- `--require-checks` - Initial CI checks setting
+
+**Examples:**
+
+```bash
+# Launch TUI for a single repo
+gh dep --repo owner/app
+
+# Launch for entire organization with custom initial settings
+gh dep --owner myorg --merge-method rebase --merge-mode api
+
+# Filter by label
+gh dep --repo owner/app --label dependencies
+```
+
 #### `list` - List dependency PRs
 
 ```bash
@@ -91,7 +164,7 @@ gh dep list [flags]
 - `--json` - Output as JSON
 - `--limit` - Max PRs to fetch per repo (default: 200)
 - `--repo` / `-R` - Target repo(s), comma-separated (e.g., `owner/repo1,owner/repo2`)
-- `--owner` / `-O` - Target all repos in an organization
+- `--owner` - Target all repos in an organization
 
 #### `groups` - Show cached groups
 
@@ -360,6 +433,9 @@ Built with:
 - [GitHub CLI](https://cli.github.com/)
 - [go-gh](https://github.com/cli/go-gh) - Official GitHub CLI library and table formatter
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
+- [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) - TUI styling
 
 ---
 

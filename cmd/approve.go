@@ -18,8 +18,6 @@ var approveCmd = &cobra.Command{
 var (
 	approveGroup  string
 	approveDryRun bool
-	approveRepo   string
-	approveOrg    string
 )
 
 func init() {
@@ -27,8 +25,6 @@ func init() {
 	_ = approveCmd.MarkFlagRequired("group")
 
 	approveCmd.Flags().BoolVar(&approveDryRun, "dry-run", false, "Print actions without executing")
-	approveCmd.Flags().StringVarP(&approveRepo, "repo", "R", "", "Target repo(s), comma-separated")
-	approveCmd.Flags().StringVarP(&approveOrg, "org", "O", "", "Target organization")
 }
 
 func runApprove(cmd *cobra.Command, args []string) error {

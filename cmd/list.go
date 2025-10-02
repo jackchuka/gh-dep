@@ -35,10 +35,10 @@ func init() {
 	listCmd.Flags().IntVar(&listLimit, "limit", 200, "Max PRs to fetch per repo")
 
 	// additional filters
+	listCmd.Flags().StringVarP(&listRepo, "repo", "R", "", "Target repo(s), comma-separated")
 	listCmd.Flags().StringVar(&listLabel, "label", "", "PR label to filter")
 	listCmd.Flags().StringVar(&listAuthor, "author", "dependabot[bot]", "PR author to filter (use 'any' for all)")
-	listCmd.Flags().StringVarP(&listRepo, "repo", "R", "", "Target repo(s), comma-separated")
-	listCmd.Flags().StringVarP(&listOwner, "owner", "O", "", "Target owner (user or org)")
+	listCmd.Flags().StringVar(&listOwner, "owner", "", "Target owner (user or org)")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
