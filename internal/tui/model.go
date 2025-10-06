@@ -184,6 +184,21 @@ var (
 
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241"))
+
+	ciSuccessStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("42")).
+			Bold(true)
+
+	ciPendingStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("226")).
+			Bold(true)
+
+	ciFailureStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Bold(true)
+
+	ciUnknownStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("240"))
 )
 
 func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool) *Model {
@@ -314,6 +329,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.ToggleChecks):
 			m.requireChecks = !m.requireChecks
+			m.filterPRs()
+			m.cursor = 0
 
 		case key.Matches(msg, keys.Search):
 			m.searching = true
@@ -418,9 +435,12 @@ func (m *Model) renderList() string {
 			checkbox = selectedStyle.Render("[✓]")
 		}
 
-		line := fmt.Sprintf("%s %s %s #%d - %s",
+		ciStatus := formatCIStatus(pr.CIStatus)
+
+		line := fmt.Sprintf("%s %s %s %s #%d - %s",
 			cursor,
 			checkbox,
+			ciStatus,
 			pr.Repo,
 			pr.Number,
 			pr.Title,
@@ -568,6 +588,19 @@ func (m *Model) hasSelection() bool {
 	return false
 }
 
+func formatCIStatus(status string) string {
+	switch status {
+	case "success":
+		return ciSuccessStyle.Render("✓")
+	case "pending":
+		return ciPendingStyle.Render("●")
+	case "failure", "error":
+		return ciFailureStyle.Render("✗")
+	default:
+		return ciUnknownStyle.Render("-")
+	}
+}
+
 func (m *Model) countSelected() int {
 	count := 0
 	for _, selected := range m.selected {
@@ -579,20 +612,26 @@ func (m *Model) countSelected() int {
 }
 
 func (m *Model) filterPRs() {
-	if m.searchQuery == "" {
-		m.filteredPRs = m.prs
-		return
-	}
-
 	query := strings.ToLower(m.searchQuery)
 	var filtered []types.PR
 
 	for _, pr := range m.prs {
-		if strings.Contains(strings.ToLower(pr.Title), query) ||
-			strings.Contains(strings.ToLower(pr.Repo), query) ||
-			strings.Contains(fmt.Sprintf("%d", pr.Number), query) {
-			filtered = append(filtered, pr)
+		// Filter by search query if present
+		if m.searchQuery != "" {
+			matchesSearch := strings.Contains(strings.ToLower(pr.Title), query) ||
+				strings.Contains(strings.ToLower(pr.Repo), query) ||
+				strings.Contains(fmt.Sprintf("%d", pr.Number), query)
+			if !matchesSearch {
+				continue
+			}
 		}
+
+		// Filter by CI status if requireChecks is enabled
+		if m.requireChecks && pr.CIStatus != "success" {
+			continue
+		}
+
+		filtered = append(filtered, pr)
 	}
 
 	m.filteredPRs = filtered

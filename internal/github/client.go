@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/cli/go-gh/v2"
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -68,18 +69,43 @@ func SearchPRs(
 		return nil, fmt.Errorf("failed to parse search results: %w", err)
 	}
 
-	var prs []types.PR
-	for _, raw := range rawPRs {
-		prs = append(prs, types.PR{
-			Number:  raw.Number,
-			Title:   raw.Title,
-			Author:  raw.Author.Login,
-			Repo:    raw.Repository.NameWithOwner,
-			URL:     raw.URL,
-			HeadSHA: "", // Note: gh search doesn't return headRefOid, need to fetch separately if needed
-		})
+	// Convert raw PRs to types.PR first
+	prs := make([]types.PR, len(rawPRs))
+	for i, raw := range rawPRs {
+		prs[i] = types.PR{
+			Number: raw.Number,
+			Title:  raw.Title,
+			Author: raw.Author.Login,
+			Repo:   raw.Repository.NameWithOwner,
+			URL:    raw.URL,
+		}
 	}
 
+	// Fetch CI status concurrently with worker pool
+	const maxWorkers = 10
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, maxWorkers)
+
+	for i := range prs {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			semaphore <- struct{}{}        // Acquire
+			defer func() { <-semaphore }() // Release
+
+			// Fetch HEAD SHA and CI status
+			headSHA, err := GetPRHead(prs[idx].Repo, prs[idx].Number)
+			if err == nil {
+				prs[idx].HeadSHA = headSHA
+				ciStatus, err := GetCIStatus(prs[idx].Repo, headSHA)
+				if err == nil && ciStatus != nil {
+					prs[idx].CIStatus = ciStatus.State
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
 	return prs, nil
 }
 

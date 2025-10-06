@@ -2,12 +2,13 @@ package types
 
 // PR represents a pull request
 type PR struct {
-	Number  int    `json:"number"`
-	Title   string `json:"title"`
-	Author  string `json:"author"`
-	Repo    string `json:"repo"` // OWNER/REPO format
-	URL     string `json:"url"`
-	HeadSHA string `json:"-"` // For CI status checks
+	Number   int    `json:"number"`
+	Title    string `json:"title"`
+	Author   string `json:"author"`
+	Repo     string `json:"repo"` // OWNER/REPO format
+	URL      string `json:"url"`
+	HeadSHA  string `json:"-"`         // For CI status checks
+	CIStatus string `json:"ci_status"` // CI status: success, pending, failure, or empty
 }
 
 // Group represents a collection of PRs for the same package@version
