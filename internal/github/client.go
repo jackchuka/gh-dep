@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -247,6 +248,24 @@ type CheckStatus struct {
 	AllPassed bool
 }
 
+type statusResponse struct {
+	State    string          `json:"state"`
+	Statuses []statusContext `json:"statuses"`
+}
+
+type statusContext struct {
+	State string `json:"state"`
+}
+
+type checkSuiteResponse struct {
+	CheckSuites []checkSuite `json:"check_suites"`
+}
+
+type checkSuite struct {
+	Status     string  `json:"status"`
+	Conclusion *string `json:"conclusion"`
+}
+
 // GetPRHead fetches the HEAD SHA for a PR (useful when SearchPRs doesn't return it)
 func GetPRHead(repo string, number int) (string, error) {
 	client, err := GetClient()
@@ -275,22 +294,77 @@ func GetCIStatus(repo string, sha string) (*CheckStatus, error) {
 		return nil, err
 	}
 
-	var status struct {
-		State string `json:"state"`
+	var suites checkSuiteResponse
+
+	suitePath := fmt.Sprintf("repos/%s/commits/%s/check-suites", repo, sha)
+	suitesErr := client.Get(suitePath, &suites)
+
+	var status statusResponse
+
+	statusPath := fmt.Sprintf("repos/%s/commits/%s/status", repo, sha)
+	statusErr := client.Get(statusPath, &status)
+
+	if statusErr != nil && suitesErr != nil {
+		return nil, fmt.Errorf("failed to get status for %s@%s: status error: %v; check suites error: %v",
+			repo, sha, statusErr, suitesErr)
 	}
 
-	path := fmt.Sprintf("repos/%s/commits/%s/status", repo, sha)
-	if err := client.Get(path, &status); err != nil {
-		return nil, fmt.Errorf("failed to get status: %w", err)
-	}
+	state := deriveCIState(suites, status)
 
 	return &CheckStatus{
-		State:     status.State,
-		AllPassed: status.State == "success",
+		State:     state,
+		AllPassed: state == "success",
 	}, nil
 }
 
 // parseJSON is a helper to parse JSON strings (gh.Exec returns Bytes that have String() method)
 func parseJSON(data string, v interface{}) error {
 	return json.Unmarshal([]byte(data), v)
+}
+
+func deriveCIState(
+	suites checkSuiteResponse,
+	status statusResponse,
+) string {
+	allCompleted := true
+	allSuccess := true
+
+	if len(suites.CheckSuites) > 0 {
+		for _, suite := range suites.CheckSuites {
+			// ignore queued suites
+			if suite.Status == "queued" {
+				continue
+			}
+			if suite.Status != "completed" {
+				allCompleted = false
+				break
+			}
+			// check conclusion
+			if suite.Conclusion != nil &&
+				slices.Contains([]string{"neutral", "skipped", "success"}, *suite.Conclusion) {
+				continue
+			}
+			allSuccess = false
+		}
+	}
+
+	if len(status.Statuses) > 0 {
+		for _, s := range status.Statuses {
+			if s.State != "success" {
+				allSuccess = false
+			}
+			if s.State == "pending" {
+				allCompleted = false
+			}
+		}
+	}
+
+	if allCompleted {
+		if allSuccess {
+			return "success"
+		} else {
+			return "failure"
+		}
+	}
+	return "pending"
 }
