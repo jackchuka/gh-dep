@@ -254,8 +254,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.view == ViewComplete {
-			if msg.String() == "q" || msg.String() == "enter" {
+			if msg.String() == "q" {
 				return m, tea.Quit
+			}
+			if msg.String() == "enter" || msg.String() == "esc" {
+				m.view = ViewList
+				m.executionResult = nil
+				m.selected = make(map[int]bool)
+				return m, nil
 			}
 			return m, nil
 		}
@@ -541,7 +547,7 @@ func (m *Model) renderComplete() string {
 	s.WriteString("\n")
 	s.WriteString(headerStyle.Render(fmt.Sprintf("Summary: %d succeeded, %d failed", successCount, failCount)))
 	s.WriteString("\n\n")
-	s.WriteString(helpStyle.Render("Press enter or q to exit"))
+	s.WriteString(helpStyle.Render("Press enter to return to list • q to quit"))
 
 	return s.String()
 }
