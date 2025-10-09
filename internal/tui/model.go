@@ -201,7 +201,7 @@ var (
 			Foreground(lipgloss.Color("240"))
 )
 
-func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool) *Model {
+func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Search PRs..."
 	ti.CharLimit = 100
@@ -211,7 +211,7 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool)
 		filteredPRs:   prs,
 		selected:      make(map[int]bool),
 		cursor:        0,
-		mode:          ModeApprove,
+		mode:          mode,
 		view:          ViewList,
 		searchInput:   ti,
 		searching:     false,
@@ -223,8 +223,8 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool)
 }
 
 // NewModelWithExecutor creates a new model with execution capabilities
-func NewModelWithExecutor(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool) *Model {
-	return NewModel(prs, mergeMethod, mergeMode, requireChecks)
+func NewModelWithExecutor(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode) *Model {
+	return NewModel(prs, mergeMethod, mergeMode, requireChecks, mode)
 }
 
 func (m *Model) Init() tea.Cmd {

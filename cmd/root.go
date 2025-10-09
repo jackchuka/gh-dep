@@ -21,6 +21,7 @@ var (
 	rootMergeMethod  string
 	rootMergeMode    string
 	rootRequireCheck bool
+	rootMode         string
 )
 
 var rootCmd = &cobra.Command{
@@ -78,8 +79,19 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Parse mode
+	mode := tui.ModeApprove // default
+	switch rootMode {
+	case "approve":
+		mode = tui.ModeApprove
+	case "merge":
+		mode = tui.ModeMerge
+	case "approve-and-merge", "both":
+		mode = tui.ModeApproveAndMerge
+	}
+
 	// Launch TUI
-	model := tui.NewModelWithExecutor(allPRs, rootMergeMethod, rootMergeMode, rootRequireCheck)
+	model := tui.NewModelWithExecutor(allPRs, rootMergeMethod, rootMergeMode, rootRequireCheck, mode)
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
@@ -98,6 +110,7 @@ func init() {
 	rootCmd.Flags().StringVar(&rootMergeMethod, "merge-method", "squash", "Merge method: merge, squash, or rebase")
 	rootCmd.Flags().StringVar(&rootMergeMode, "merge-mode", "dependabot", "Merge mode: dependabot or api")
 	rootCmd.Flags().BoolVar(&rootRequireCheck, "require-checks", false, "Require CI checks to pass (API mode only)")
+	rootCmd.Flags().StringVar(&rootMode, "mode", "approve", "Execution mode: approve, merge, or approve-and-merge (both)")
 
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(groupsCmd)
