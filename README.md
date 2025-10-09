@@ -135,6 +135,7 @@ Launch an interactive terminal UI for managing dependency PRs with:
 - `--limit` - Max PRs to fetch per repo (default: 200)
 - `--repo` / `-R` - Target repo(s), comma-separated
 - `--owner` - Target all repos in an organization
+- `--mode` - Initial execution mode: `approve`, `merge`, or `approve-and-merge` (default: `approve`)
 - `--merge-method` - Initial merge method (default: `squash`)
 - `--merge-mode` - Initial merge mode (default: `dependabot`)
 - `--require-checks` - Initial CI checks setting
@@ -147,6 +148,12 @@ gh dep --repo owner/app
 
 # Launch for entire organization with custom initial settings
 gh dep --owner myorg --merge-method rebase --merge-mode api
+
+# Start in merge mode instead of approve mode
+gh dep --repo owner/app --mode merge
+
+# Start in approve-and-merge mode
+gh dep --repo owner/app --mode approve-and-merge
 
 # Filter by label
 gh dep --repo owner/app --label dependencies
