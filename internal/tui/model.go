@@ -206,7 +206,7 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool,
 	ti.Placeholder = "Search PRs..."
 	ti.CharLimit = 100
 
-	return &Model{
+	m := &Model{
 		prs:           prs,
 		filteredPRs:   prs,
 		selected:      make(map[int]bool),
@@ -220,6 +220,13 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool,
 		mergeMode:     mergeMode,
 		requireChecks: requireChecks,
 	}
+
+	// Apply initial filtering based on requireChecks
+	if requireChecks {
+		m.filterPRs()
+	}
+
+	return m
 }
 
 // NewModelWithExecutor creates a new model with execution capabilities
