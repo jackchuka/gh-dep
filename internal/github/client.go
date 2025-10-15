@@ -19,34 +19,36 @@ func GetClient() (*api.RESTClient, error) {
 	return api.DefaultRESTClient()
 }
 
-// SearchPRs searches for PRs based on org/repo, label, author, and limit
-func SearchPRs(
-	owner string,
-	repos []string,
-	label string,
-	author string,
-	limit int,
-) ([]types.PR, error) {
+type SearchParams struct {
+	Owner  string
+	Repos  []string
+	Label  string
+	Author string
+	Limit  int
+}
+
+// SearchPRs searches for PRs based on the given parameters
+func SearchPRs(params SearchParams) ([]types.PR, error) {
 	args := []string{"search", "prs", "is:open"}
 
-	if owner != "" {
-		args = append(args, "--owner", owner)
+	if params.Owner != "" {
+		args = append(args, "--owner", params.Owner)
 	}
-	if len(repos) > 0 {
-		for _, repo := range repos {
+	if len(params.Repos) > 0 {
+		for _, repo := range params.Repos {
 			args = append(args, "--repo", repo)
 		}
 	}
 
-	if label != "" {
-		args = append(args, "--label", label)
+	if params.Label != "" {
+		args = append(args, "--label", params.Label)
 	}
-	if author != "" && author != "any" {
-		args = append(args, "--author", author)
+	if params.Author != "" && params.Author != "any" {
+		args = append(args, "--author", params.Author)
 	}
 	args = append(args, "--json", "number,title,author,url,repository")
-	if limit > 0 {
-		args = append(args, "--limit", fmt.Sprintf("%d", limit))
+	if params.Limit > 0 {
+		args = append(args, "--limit", fmt.Sprintf("%d", params.Limit))
 	}
 
 	var rawPRs []struct {

@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jackchuka/gh-dep/internal/github"
 	"github.com/jackchuka/gh-dep/internal/types"
 )
 
@@ -60,11 +61,13 @@ type Model struct {
 	searchQuery     string
 	executionResult []ExecutionResult
 	executing       bool
+	refetching      bool
 	mergeMethod     string
 	mergeMode       string
 	requireChecks   bool
 	width           int
 	height          int
+	searchParams    github.SearchParams // For refetching PRs
 }
 
 type keyMap struct {
@@ -80,6 +83,7 @@ type keyMap struct {
 	Execute         key.Binding
 	Search          key.Binding
 	OpenBrowser     key.Binding
+	Refresh         key.Binding
 	Help            key.Binding
 	Quit            key.Binding
 	CancelSearch    key.Binding
@@ -134,6 +138,10 @@ var keys = keyMap{
 	OpenBrowser: key.NewBinding(
 		key.WithKeys("o"),
 		key.WithHelp("o", "open in browser"),
+	),
+	Refresh: key.NewBinding(
+		key.WithKeys("r"),
+		key.WithHelp("r", "refresh PR list"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
@@ -201,7 +209,7 @@ var (
 			Foreground(lipgloss.Color("240"))
 )
 
-func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode) *Model {
+func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode, searchParams github.SearchParams) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Search PRs..."
 	ti.CharLimit = 100
@@ -219,6 +227,7 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool,
 		mergeMethod:   mergeMethod,
 		mergeMode:     mergeMode,
 		requireChecks: requireChecks,
+		searchParams:  searchParams,
 	}
 
 	// Apply initial filtering based on requireChecks
@@ -227,11 +236,6 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool,
 	}
 
 	return m
-}
-
-// NewModelWithExecutor creates a new model with execution capabilities
-func NewModelWithExecutor(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode) *Model {
-	return NewModel(prs, mergeMethod, mergeMode, requireChecks, mode)
 }
 
 func (m *Model) Init() tea.Cmd {
@@ -258,15 +262,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			if msg.String() == "enter" || msg.String() == "esc" {
+				// Refetch PRs from GitHub to update the list
 				m.view = ViewList
 				m.executionResult = nil
 				m.selected = make(map[int]bool)
-				return m, nil
+				m.cursor = 0
+				m.refetching = true
+				return m, m.refetchPRs()
 			}
 			return m, nil
 		}
 
 		if m.executing {
+			return m, nil
+		}
+
+		if m.refetching {
 			return m, nil
 		}
 
@@ -355,6 +366,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.openPRInBrowser(m.filteredPRs[m.cursor])
 			}
 
+		case key.Matches(msg, keys.Refresh):
+			// Clear selections and refetch the PR list
+			m.selected = make(map[int]bool)
+			m.cursor = 0
+			m.refetching = true
+			return m, m.refetchPRs()
+
 		case key.Matches(msg, keys.Execute):
 			if m.hasSelection() {
 				m.executing = true
@@ -370,6 +388,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case executionCompleteMsg:
 		m.executing = false
 		m.view = ViewComplete
+		return m, nil
+
+	case refetchCompleteMsg:
+		// Update the PR list with the refetched data
+		m.refetching = false
+		m.prs = msg.prs
+		m.filterPRs()
+		return m, nil
+
+	case refetchErrorMsg:
+		// For now, just continue - we could show an error message in the future
+		m.refetching = false
 		return m, nil
 	}
 
@@ -395,6 +425,14 @@ func (m *Model) renderList() string {
 	// Title
 	s.WriteString(titleStyle.Render("gh-dep Interactive Mode"))
 	s.WriteString("\n\n")
+
+	// Show loading indicator if refetching
+	if m.refetching {
+		s.WriteString(headerStyle.Render("Refreshing PR list from GitHub..."))
+		s.WriteString("\n\n")
+		s.WriteString(helpStyle.Render("Please wait..."))
+		return s.String()
+	}
 
 	// Mode and settings indicator
 	s.WriteString(headerStyle.Render("Action: "))
@@ -469,7 +507,7 @@ func (m *Model) renderList() string {
 
 	// Help
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("↑/↓: navigate • space: select • a: select all • d: deselect all"))
+	s.WriteString(helpStyle.Render("↑/↓: navigate • space: select • a: select all • d: deselect all • r: refresh"))
 	s.WriteString("\n")
 	s.WriteString(helpStyle.Render("m/M/D/c: toggle settings • /: search • o: open • x: execute • ?: help • q: quit"))
 
@@ -574,6 +612,7 @@ func (m *Model) renderHelp() string {
 		{"/", "Enter search mode"},
 		{"esc", "Cancel search"},
 		{"o", "Open current PR in browser"},
+		{"r", "Refresh PR list from GitHub"},
 		{"x", "Execute selected actions"},
 		{"?", "Show/hide this help screen"},
 		{"q", "Quit the application"},
@@ -673,4 +712,23 @@ func (m *Model) getVisibleRange() (int, int) {
 	return start, end
 }
 
+// refetchPRs creates a command to refetch the PR list from GitHub
+func (m *Model) refetchPRs() tea.Cmd {
+	return func() tea.Msg {
+		prs, err := github.SearchPRs(m.searchParams)
+		if err != nil {
+			return refetchErrorMsg{err: err}
+		}
+		return refetchCompleteMsg{prs: prs}
+	}
+}
+
 type executionCompleteMsg struct{}
+
+type refetchCompleteMsg struct {
+	prs []types.PR
+}
+
+type refetchErrorMsg struct {
+	err error
+}

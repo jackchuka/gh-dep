@@ -55,25 +55,17 @@ func runList(cmd *cobra.Command, args []string) error {
 		repo = strings.Join(cfg.GetRepos(), ",")
 	}
 
-	var allPRs []types.PR
+	searchParams := github.SearchParams{
+		Owner:  rootOwner,
+		Repos:  strings.Split(repo, ","),
+		Label:  label,
+		Author: author,
+		Limit:  rootLimit,
+	}
 
-	if listOwner != "" {
-		allPRs, err = github.SearchPRs(listOwner, nil, label, author, listLimit)
-		if err != nil {
-			return fmt.Errorf("failed to search PRs in owner %s: %w", listOwner, err)
-		}
-	} else {
-		if repo == "" {
-			return fmt.Errorf("either --owner or --repo must be specified")
-		}
-		repos := strings.Split(repo, ",")
-		allPRs, err = github.SearchPRs("", repos, label, author, listLimit)
-		if err != nil {
-			if len(repos) > 1 {
-				return fmt.Errorf("failed to search PRs across repos: %w", err)
-			}
-			return fmt.Errorf("failed to list PRs for %s: %w", repos[0], err)
-		}
+	allPRs, err := github.SearchPRs(searchParams)
+	if err != nil {
+		return fmt.Errorf("failed to search PRs: %w", err)
 	}
 
 	if len(allPRs) == 0 {

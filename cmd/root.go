@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jackchuka/gh-dep/internal/config"
 	"github.com/jackchuka/gh-dep/internal/github"
 	"github.com/jackchuka/gh-dep/internal/tui"
-	"github.com/jackchuka/gh-dep/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -40,38 +38,17 @@ func Execute() error {
 }
 
 func runRoot(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Load()
+	searchParams := github.SearchParams{
+		Owner:  rootOwner,
+		Repos:  strings.Split(rootRepo, ","),
+		Label:  rootLabel,
+		Author: rootAuthor,
+		Limit:  rootLimit,
+	}
+
+	allPRs, err := github.SearchPRs(searchParams)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	label := rootLabel
-	author := rootAuthor
-	repo := rootRepo
-
-	if !cmd.Flags().Changed("repo") && len(cfg.GetRepos()) > 0 {
-		repo = strings.Join(cfg.GetRepos(), ",")
-	}
-
-	var allPRs []types.PR
-
-	if rootOwner != "" {
-		allPRs, err = github.SearchPRs(rootOwner, nil, label, author, rootLimit)
-		if err != nil {
-			return fmt.Errorf("failed to search PRs in owner %s: %w", rootOwner, err)
-		}
-	} else {
-		if repo == "" {
-			return fmt.Errorf("either --owner or --repo must be specified")
-		}
-		repos := strings.Split(repo, ",")
-		allPRs, err = github.SearchPRs("", repos, label, author, rootLimit)
-		if err != nil {
-			if len(repos) > 1 {
-				return fmt.Errorf("failed to search PRs across repos: %w", err)
-			}
-			return fmt.Errorf("failed to list PRs for %s: %w", repos[0], err)
-		}
+		return fmt.Errorf("failed to search PRs: %w", err)
 	}
 
 	if len(allPRs) == 0 {
@@ -91,7 +68,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// Launch TUI
-	model := tui.NewModelWithExecutor(allPRs, rootMergeMethod, rootMergeMode, rootRequireCheck, mode)
+	model := tui.NewModel(allPRs, rootMergeMethod, rootMergeMode, rootRequireCheck, mode, searchParams)
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
