@@ -20,11 +20,13 @@ func GetClient() (*api.RESTClient, error) {
 }
 
 type SearchParams struct {
-	Owner  string
-	Repos  []string
-	Label  string
-	Author string
-	Limit  int
+	Owner           string
+	Repos           []string
+	Label           string
+	Author          string
+	Limit           int
+	ReviewRequested string
+	Archived        bool
 }
 
 // SearchPRs searches for PRs based on the given parameters
@@ -45,6 +47,13 @@ func SearchPRs(params SearchParams) ([]types.PR, error) {
 	}
 	if params.Author != "" && params.Author != "any" {
 		args = append(args, "--author", params.Author)
+	}
+	if params.ReviewRequested != "" {
+		args = append(args, "--review-requested", params.ReviewRequested)
+	}
+	// Only include archived repos if explicitly requested
+	if !params.Archived {
+		args = append(args, fmt.Sprintf("--archived=%t", params.Archived))
 	}
 	args = append(args, "--json", "number,title,author,url,repository")
 	if params.Limit > 0 {

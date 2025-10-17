@@ -132,6 +132,8 @@ Launch an interactive terminal UI for managing dependency PRs with:
 
 - `--author` - PR author to filter (default: `dependabot[bot]`, use `any` for all)
 - `--label` - PR label to filter
+- `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)
+- `--archived` - Include PRs from archived repositories (default: false)
 - `--limit` - Max PRs to fetch per repo (default: 200)
 - `--repo` / `-R` - Target repo(s), comma-separated
 - `--owner` - Target all repos in an organization
@@ -157,6 +159,12 @@ gh dep --repo owner/app --mode approve-and-merge
 
 # Filter by label
 gh dep --repo owner/app --label dependencies
+
+# Filter PRs where review is requested from you
+gh dep --repo owner/app --review-requested @me
+
+# Include PRs from archived repositories
+gh dep --owner myorg --archived
 ```
 
 #### `list` - List dependency PRs
@@ -169,6 +177,8 @@ gh dep list [flags]
 
 - `--label` - PR label to filter
 - `--author` - PR author to filter (default: `dependabot[bot]`, use `any` for all)
+- `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)
+- `--archived` - Include PRs from archived repositories (default: false)
 - `--group` - Group PRs by package@version and cache results
 - `--json` - Output as JSON
 - `--limit` - Max PRs to fetch per repo (default: 200)

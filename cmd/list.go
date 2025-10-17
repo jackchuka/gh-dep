@@ -19,13 +19,15 @@ var listCmd = &cobra.Command{
 }
 
 var (
-	listLabel  string
-	listAuthor string
-	listGroup  bool
-	listLimit  int
-	listRepo   string
-	listOwner  string
-	listJSON   bool
+	listLabel           string
+	listAuthor          string
+	listGroup           bool
+	listLimit           int
+	listRepo            string
+	listOwner           string
+	listJSON            bool
+	listReviewRequested string
+	listArchived        bool
 )
 
 func init() {
@@ -39,6 +41,8 @@ func init() {
 	listCmd.Flags().StringVar(&listLabel, "label", "", "PR label to filter")
 	listCmd.Flags().StringVar(&listAuthor, "author", "dependabot[bot]", "PR author to filter (use 'any' for all)")
 	listCmd.Flags().StringVar(&listOwner, "owner", "", "Target owner (user or org)")
+	listCmd.Flags().StringVar(&listReviewRequested, "review-requested", "", "Filter PRs by review requested from user or team (e.g., '@me' or 'username')")
+	listCmd.Flags().BoolVar(&listArchived, "archived", false, "Include PRs from archived repositories")
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -56,11 +60,13 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	searchParams := github.SearchParams{
-		Owner:  rootOwner,
-		Repos:  strings.Split(repo, ","),
-		Label:  label,
-		Author: author,
-		Limit:  rootLimit,
+		Owner:           rootOwner,
+		Repos:           strings.Split(repo, ","),
+		Label:           label,
+		Author:          author,
+		Limit:           rootLimit,
+		ReviewRequested: listReviewRequested,
+		Archived:        listArchived,
 	}
 
 	allPRs, err := github.SearchPRs(searchParams)

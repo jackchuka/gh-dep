@@ -11,15 +11,17 @@ import (
 )
 
 var (
-	rootLabel        string
-	rootAuthor       string
-	rootLimit        int
-	rootRepo         string
-	rootOwner        string
-	rootMergeMethod  string
-	rootMergeMode    string
-	rootRequireCheck bool
-	rootMode         string
+	rootLabel           string
+	rootAuthor          string
+	rootLimit           int
+	rootRepo            string
+	rootOwner           string
+	rootMergeMethod     string
+	rootMergeMode       string
+	rootRequireCheck    bool
+	rootMode            string
+	rootReviewRequested string
+	rootArchived        bool
 )
 
 var rootCmd = &cobra.Command{
@@ -39,11 +41,13 @@ func Execute() error {
 
 func runRoot(cmd *cobra.Command, args []string) error {
 	searchParams := github.SearchParams{
-		Owner:  rootOwner,
-		Repos:  strings.Split(rootRepo, ","),
-		Label:  rootLabel,
-		Author: rootAuthor,
-		Limit:  rootLimit,
+		Owner:           rootOwner,
+		Repos:           strings.Split(rootRepo, ","),
+		Label:           rootLabel,
+		Author:          rootAuthor,
+		Limit:           rootLimit,
+		ReviewRequested: rootReviewRequested,
+		Archived:        rootArchived,
 	}
 
 	allPRs, err := github.SearchPRs(searchParams)
@@ -88,6 +92,8 @@ func init() {
 	rootCmd.Flags().StringVar(&rootMergeMode, "merge-mode", "dependabot", "Merge mode: dependabot or api")
 	rootCmd.Flags().BoolVar(&rootRequireCheck, "require-checks", false, "Require CI checks to pass (API mode only)")
 	rootCmd.Flags().StringVar(&rootMode, "mode", "approve", "Execution mode: approve, merge, or approve-and-merge (both)")
+	rootCmd.Flags().StringVar(&rootReviewRequested, "review-requested", "", "Filter PRs by review requested from user or team (e.g., '@me' or 'username')")
+	rootCmd.Flags().BoolVar(&rootArchived, "archived", false, "Include PRs from archived repositories")
 
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(groupsCmd)
