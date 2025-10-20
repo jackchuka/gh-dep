@@ -70,7 +70,7 @@ func (m *Model) approvePR(pr types.PR) ExecutionResult {
 
 func (m *Model) mergePR(pr types.PR) ExecutionResult {
 	// Check CI status if required
-	if m.mergeMode == "api" && m.requireChecks {
+	if m.requireChecks {
 		headSHA := pr.HeadSHA
 		if headSHA == "" {
 			sha, err := github.GetPRHead(pr.Repo, pr.Number)
@@ -105,19 +105,8 @@ func (m *Model) mergePR(pr types.PR) ExecutionResult {
 		}
 	}
 
-	var err error
-	if m.mergeMode == "dependabot" {
-		err = github.MergeViaDependabot(pr.Repo, pr.Number, m.mergeMethod)
-	} else {
-		err = github.MergeViaPR(pr.Repo, pr.Number, m.mergeMethod)
-	}
-
-	var action string
-	if m.mergeMode == "dependabot" {
-		action = "merge (dependabot)"
-	} else {
-		action = "merge (api)"
-	}
+	err := github.MergeViaPR(pr.Repo, pr.Number, m.mergeMethod)
+	action := "merge (api)"
 
 	return ExecutionResult{
 		PR:      pr,
