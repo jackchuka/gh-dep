@@ -7,15 +7,19 @@ A GitHub CLI extension that streamlines the review and merge workflow for automa
 
 ![gh-dep demo](demo.gif)
 
+## [2025-10-20] Important Update: Dependabot mode Deprecation
+
+**GitHub is deprecating Dependabot comment commands on January 27, 2026** ([announcement](https://github.blog/changelog/2025-10-06-upcoming-changes-to-github-dependabot-pull-request-comment-commands/)). Commands like `@dependabot merge`, `@dependabot squash and merge`, etc. will no longer work.
+
+`gh-dep` will no longer support the Dependabot merge mode after v0.7.0.
+
 ## Features
 
 - 🖥️ **Interactive TUI**: Full-featured terminal UI with keyboard navigation and live settings adjustment
 - 📋 **List** dependency PRs by label/author with clean table output
 - 📦 **Group** PRs by `package@version` for easier batched review
 - ✅ **Bulk approve** all PRs for a chosen group
-- 🚀 **Bulk merge** per group via:
-  - **Dependabot mode**: Post `@dependabot merge` comments (respects CI checks)
-  - **API mode**: Direct GitHub Merge API calls (with optional CI validation)
+- 🚀 **Bulk merge** per group via GitHub Merge API calls (with optional CI validation)
 - 🏢 **Multi-repo support**: Target specific repos or entire organizations
 - 🔄 Works out-of-the-box with **Dependabot** and **Renovate**
 - 🎨 **Multiple output formats**: Human-readable tables or JSON
@@ -68,7 +72,6 @@ gh dep --owner myorg
 - Toggle action mode with `m` (Approve → Merge → Approve & Merge)
 - Adjust merge settings on-the-fly:
   - `M` - Toggle merge method (squash → merge → rebase)
-  - `D` - Toggle merge mode (dependabot → api)
   - `c` - Toggle CI checks requirement
 - Search PRs with `/`
 - Open current PR in browser with `o`
@@ -98,11 +101,8 @@ gh dep approve --group lodash@4.17.21 --dry-run
 # Approve for real
 gh dep approve --group lodash@4.17.21
 
-# Merge via Dependabot comments (recommended - respects branch protections)
-gh dep merge --group lodash@4.17.21 --mode dependabot --method squash
-
-# Or merge directly via API with CI check validation
-gh dep merge --group lodash@4.17.21 --mode api --method squash --require-checks
+# Merge with CI check validation (--require-checks is true by default)
+gh dep merge --group lodash@4.17.21 --method squash
 ```
 
 ## Usage
@@ -123,7 +123,6 @@ Launch an interactive terminal UI for managing dependency PRs with:
 - **Live Settings**: Toggle execution mode and merge settings without restarting
   - `m` - Action mode (Approve → Merge → Approve & Merge)
   - `M` - Merge method (squash → merge → rebase)
-  - `D` - Merge mode (dependabot → api)
   - `c` - CI checks requirement
 - **Execute**: Press `x` to run selected actions with real-time feedback
 - **Help**: Press `?` to view all keyboard shortcuts
@@ -139,7 +138,6 @@ Launch an interactive terminal UI for managing dependency PRs with:
 - `--owner` - Target all repos in an organization
 - `--mode` - Initial execution mode: `approve`, `merge`, or `approve-and-merge` (default: `approve`)
 - `--merge-method` - Initial merge method (default: `squash`)
-- `--merge-mode` - Initial merge mode (default: `dependabot`)
 - `--require-checks` - Initial CI checks setting
 
 **Examples:**
@@ -149,7 +147,7 @@ Launch an interactive terminal UI for managing dependency PRs with:
 gh dep --repo owner/app
 
 # Launch for entire organization with custom initial settings
-gh dep --owner myorg --merge-method rebase --merge-mode api
+gh dep --owner myorg --merge-method rebase
 
 # Start in merge mode instead of approve mode
 gh dep --repo owner/app --mode merge
@@ -219,19 +217,15 @@ gh dep merge --group GROUP_KEY [flags]
 **Flags:**
 
 - `--group` - **Required.** Group key (e.g., `lodash@4.17.21`)
-- `--mode` - Merge mode: `dependabot` or `api` (default: `dependabot`)
 - `--method` - Merge method: `merge`, `squash`, or `rebase` (default: `squash`)
-- `--require-checks` - Require CI checks to pass before merging (API mode only)
+- `--require-checks` - Require CI checks to pass before merging
 - `--dry-run` - Print actions without executing
 
 **Examples:**
 
 ```bash
-# Merge via Dependabot comments (recommended)
-gh dep merge --group lodash@4.17.21 --mode dependabot --method squash
-
-# Merge via API with CI validation
-gh dep merge --group lodash@4.17.21 --mode api --method rebase --require-checks
+# Merge with CI validation (recommended)
+gh dep merge --group lodash@4.17.21 --method squash
 
 # Dry-run merge
 gh dep merge --group lodash@4.17.21 --dry-run
@@ -283,35 +277,7 @@ gh dep list --group --owner myorg
 
 # Approve/merge org-wide
 gh dep approve --group lodash@4.17.21
-gh dep merge --group lodash@4.17.21 --mode dependabot
-```
-
-## Merge Modes
-
-### Dependabot Mode (Recommended)
-
-Posts `@dependabot merge` comments. Dependabot handles:
-
-- Waiting for CI checks
-- Respecting branch protections
-- Auto-rebasing if needed
-
-**Use when:** You want Dependabot to control the merge process.
-
-```bash
-gh dep merge --group lodash@4.17.21 --mode dependabot --method squash
-```
-
-### API Mode
-
-Calls GitHub's Merge API directly.
-
-**Use when:** You want immediate merges and have permissions to bypass protections.
-
-**Tip:** Use `--require-checks` to validate CI status before merging:
-
-```bash
-gh dep merge --group lodash@4.17.21 --mode api --method squash --require-checks
+gh dep merge --group lodash@4.17.21 --require-checks
 ```
 
 ## Supported PR Title Patterns

@@ -63,7 +63,6 @@ type Model struct {
 	executing       bool
 	refetching      bool
 	mergeMethod     string
-	mergeMode       string
 	requireChecks   bool
 	width           int
 	height          int
@@ -71,23 +70,22 @@ type Model struct {
 }
 
 type keyMap struct {
-	Up              key.Binding
-	Down            key.Binding
-	Select          key.Binding
-	SelectAll       key.Binding
-	DeselectAll     key.Binding
-	ToggleMode      key.Binding
-	ToggleMethod    key.Binding
-	ToggleMergeMode key.Binding
-	ToggleChecks    key.Binding
-	Execute         key.Binding
-	Search          key.Binding
-	OpenBrowser     key.Binding
-	Refresh         key.Binding
-	Help            key.Binding
-	Quit            key.Binding
-	CancelSearch    key.Binding
-	ConfirmSearch   key.Binding
+	Up            key.Binding
+	Down          key.Binding
+	Select        key.Binding
+	SelectAll     key.Binding
+	DeselectAll   key.Binding
+	ToggleMode    key.Binding
+	ToggleMethod  key.Binding
+	ToggleChecks  key.Binding
+	Execute       key.Binding
+	Search        key.Binding
+	OpenBrowser   key.Binding
+	Refresh       key.Binding
+	Help          key.Binding
+	Quit          key.Binding
+	CancelSearch  key.Binding
+	ConfirmSearch key.Binding
 }
 
 var keys = keyMap{
@@ -118,10 +116,6 @@ var keys = keyMap{
 	ToggleMethod: key.NewBinding(
 		key.WithKeys("M"),
 		key.WithHelp("M", "toggle merge method"),
-	),
-	ToggleMergeMode: key.NewBinding(
-		key.WithKeys("D"),
-		key.WithHelp("D", "toggle merge mode"),
 	),
 	ToggleChecks: key.NewBinding(
 		key.WithKeys("c"),
@@ -209,7 +203,7 @@ var (
 			Foreground(lipgloss.Color("240"))
 )
 
-func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool, mode ExecutionMode, searchParams github.SearchParams) *Model {
+func NewModel(prs []types.PR, mergeMethod string, requireChecks bool, mode ExecutionMode, searchParams github.SearchParams) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Search PRs..."
 	ti.CharLimit = 100
@@ -225,7 +219,6 @@ func NewModel(prs []types.PR, mergeMethod, mergeMode string, requireChecks bool,
 		searching:     false,
 		searchQuery:   "",
 		mergeMethod:   mergeMethod,
-		mergeMode:     mergeMode,
 		requireChecks: requireChecks,
 		searchParams:  searchParams,
 	}
@@ -344,13 +337,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mergeMethod = "squash"
 			}
 
-		case key.Matches(msg, keys.ToggleMergeMode):
-			if m.mergeMode == "dependabot" {
-				m.mergeMode = "api"
-			} else {
-				m.mergeMode = "dependabot"
-			}
-
 		case key.Matches(msg, keys.ToggleChecks):
 			m.requireChecks = !m.requireChecks
 			m.filterPRs()
@@ -442,9 +428,6 @@ func (m *Model) renderList() string {
 	s.WriteString(headerStyle.Render("Method: "))
 	s.WriteString(modeStyle.Render(m.mergeMethod))
 	s.WriteString("  ")
-
-	s.WriteString(headerStyle.Render("Mode: "))
-	s.WriteString(modeStyle.Render(m.mergeMode))
 
 	if m.requireChecks {
 		s.WriteString("  ")
@@ -607,7 +590,6 @@ func (m *Model) renderHelp() string {
 		{"d", "Deselect all PRs"},
 		{"m", "Toggle action mode (Approve → Merge → Approve & Merge)"},
 		{"M", "Toggle merge method (squash → merge → rebase)"},
-		{"D", "Toggle merge mode (dependabot → api)"},
 		{"c", "Toggle CI checks requirement"},
 		{"/", "Enter search mode"},
 		{"esc", "Cancel search"},

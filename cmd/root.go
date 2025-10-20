@@ -17,7 +17,6 @@ var (
 	rootRepo            string
 	rootOwner           string
 	rootMergeMethod     string
-	rootMergeMode       string
 	rootRequireCheck    bool
 	rootMode            string
 	rootReviewRequested string
@@ -72,7 +71,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// Launch TUI
-	model := tui.NewModel(allPRs, rootMergeMethod, rootMergeMode, rootRequireCheck, mode, searchParams)
+	model := tui.NewModel(allPRs, rootMergeMethod, rootRequireCheck, mode, searchParams)
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
@@ -89,8 +88,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&rootRepo, "repo", "R", "", "Target repo(s), comma-separated")
 	rootCmd.Flags().StringVar(&rootOwner, "owner", "", "Target owner (user or org)")
 	rootCmd.Flags().StringVar(&rootMergeMethod, "merge-method", "squash", "Merge method: merge, squash, or rebase")
-	rootCmd.Flags().StringVar(&rootMergeMode, "merge-mode", "dependabot", "Merge mode: dependabot or api")
-	rootCmd.Flags().BoolVar(&rootRequireCheck, "require-checks", false, "Require CI checks to pass (API mode only)")
+	rootCmd.Flags().BoolVar(&rootRequireCheck, "require-checks", false, "Require CI checks to pass")
 	rootCmd.Flags().StringVar(&rootMode, "mode", "approve", "Execution mode: approve, merge, or approve-and-merge (both)")
 	rootCmd.Flags().StringVar(&rootReviewRequested, "review-requested", "", "Filter PRs by review requested from user or team (e.g., '@me' or 'username')")
 	rootCmd.Flags().BoolVar(&rootArchived, "archived", false, "Include PRs from archived repositories")

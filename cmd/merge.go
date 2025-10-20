@@ -18,7 +18,6 @@ var mergeCmd = &cobra.Command{
 var (
 	mergeGroup         string
 	mergeDryRun        bool
-	mergeMode          string
 	mergeMethod        string
 	mergeRequireChecks bool
 )
@@ -28,16 +27,11 @@ func init() {
 	_ = mergeCmd.MarkFlagRequired("group")
 
 	mergeCmd.Flags().BoolVar(&mergeDryRun, "dry-run", false, "Print actions without executing")
-	mergeCmd.Flags().StringVar(&mergeMode, "mode", "dependabot", "Merge mode: dependabot or api")
 	mergeCmd.Flags().StringVar(&mergeMethod, "method", "squash", "Merge method: merge, squash, or rebase")
-	mergeCmd.Flags().BoolVar(&mergeRequireChecks, "require-checks", false, "Require CI checks to pass (API mode only)")
+	mergeCmd.Flags().BoolVar(&mergeRequireChecks, "require-checks", true, "Require CI checks to pass")
 }
 
 func runMerge(cmd *cobra.Command, args []string) error {
-	if mergeMode != "dependabot" && mergeMode != "api" {
-		return fmt.Errorf("invalid merge mode: %s (must be 'dependabot' or 'api')", mergeMode)
-	}
-
 	if mergeMethod != "merge" && mergeMethod != "squash" && mergeMethod != "rebase" {
 		return fmt.Errorf("invalid merge method: %s (must be 'merge', 'squash', or 'rebase')", mergeMethod)
 	}
@@ -59,7 +53,7 @@ func runMerge(cmd *cobra.Command, args []string) error {
 	display := ui.New(prs, false)
 
 	for _, pr := range prs {
-		if mergeMode == "api" && mergeRequireChecks {
+		if mergeRequireChecks {
 			headSHA := pr.HeadSHA
 			if headSHA == "" {
 				sha, err := github.GetPRHead(pr.Repo, pr.Number)
@@ -83,31 +77,17 @@ func runMerge(cmd *cobra.Command, args []string) error {
 		}
 
 		if mergeDryRun {
-			if mergeMode == "dependabot" {
-				display.PrintAction("merge", pr, "via dependabot")
-			} else {
-				display.PrintAction("merge", pr, "via API")
-			}
+			display.PrintAction("[dry-run] merge", pr)
 			continue
 		}
 
-		var mergeErr error
-		if mergeMode == "dependabot" {
-			mergeErr = github.MergeViaDependabot(pr.Repo, pr.Number, mergeMethod)
-		} else {
-			mergeErr = github.MergeViaPR(pr.Repo, pr.Number, mergeMethod)
-		}
-
+		mergeErr := github.MergeViaPR(pr.Repo, pr.Number, mergeMethod)
 		if mergeErr != nil {
 			display.PrintError("merge", pr, mergeErr)
 			continue
 		}
 
-		if mergeMode == "dependabot" {
-			display.PrintAction("merge", pr, "via dependabot")
-		} else {
-			display.PrintAction("merge", pr, "via API")
-		}
+		display.PrintAction("merge", pr, "via API")
 	}
 
 	return nil
