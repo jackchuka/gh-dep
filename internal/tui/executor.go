@@ -24,12 +24,11 @@ func (m *Model) executeSelected() tea.Cmd {
 		cmds = append(cmds, m.executePRCmd(pr))
 	}
 
-	// Add completion command at the end
-	cmds = append(cmds, func() tea.Msg {
-		return executionCompleteMsg{}
-	})
-
-	return tea.Batch(cmds...)
+	// Run all PR commands concurrently, but only mark completion after they all finish.
+	return tea.Sequence(
+		tea.Batch(cmds...),
+		func() tea.Msg { return executionCompleteMsg{} },
+	)
 }
 
 // executePRCmd creates a command to execute action on a single PR
