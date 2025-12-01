@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jackchuka/gh-dep/internal/config"
 	"github.com/jackchuka/gh-dep/internal/github"
 	"github.com/jackchuka/gh-dep/internal/tui"
 	"github.com/spf13/cobra"
@@ -39,9 +39,16 @@ func Execute() error {
 }
 
 func runRoot(cmd *cobra.Command, args []string) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	owner, repos := resolveScope(cmd, rootRepo, rootOwner, cfg)
+
 	searchParams := github.SearchParams{
-		Owner:           rootOwner,
-		Repos:           strings.Split(rootRepo, ","),
+		Owner:           owner,
+		Repos:           repos,
 		Label:           rootLabel,
 		Author:          rootAuthor,
 		Limit:           rootLimit,
