@@ -58,8 +58,11 @@ gh extension install .
 ### Interactive Mode (Recommended)
 
 ```bash
-# Launch interactive TUI for a single repo
-gh dep --repo owner/app
+# Launch interactive TUI for your org repos
+gh dep
+
+# Or for repo[s]
+gh dep --repo owner/app,owner/api
 
 # Or for an entire organization
 gh dep --owner myorg

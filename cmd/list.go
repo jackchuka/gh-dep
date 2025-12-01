@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/jackchuka/gh-dep/internal/cache"
 	"github.com/jackchuka/gh-dep/internal/config"
@@ -53,18 +52,15 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	label := listLabel
 	author := listAuthor
-	repo := listRepo
 
-	if !cmd.Flags().Changed("repo") && len(cfg.GetRepos()) > 0 {
-		repo = strings.Join(cfg.GetRepos(), ",")
-	}
+	owner, repos := resolveScope(cmd, listRepo, listOwner, cfg)
 
 	searchParams := github.SearchParams{
-		Owner:           rootOwner,
-		Repos:           strings.Split(repo, ","),
+		Owner:           owner,
+		Repos:           repos,
 		Label:           label,
 		Author:          author,
-		Limit:           rootLimit,
+		Limit:           listLimit,
 		ReviewRequested: listReviewRequested,
 		Archived:        listArchived,
 	}
