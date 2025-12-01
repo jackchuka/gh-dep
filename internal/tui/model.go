@@ -256,6 +256,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if msg.String() == "enter" || msg.String() == "esc" {
 				// Refetch PRs from GitHub to update the list
+				m.clearSearch()
 				m.view = ViewList
 				m.executionResult = nil
 				m.selected = make(map[int]bool)
@@ -673,6 +674,13 @@ func (m *Model) filterPRs() {
 	// Clear selections that are no longer visible
 	newSelected := make(map[int]bool)
 	m.selected = newSelected
+}
+
+func (m *Model) clearSearch() {
+	m.searching = false
+	m.searchQuery = ""
+	m.searchInput.SetValue("")
+	m.searchInput.Blur()
 }
 
 func (m *Model) getVisibleRange() (int, int) {
