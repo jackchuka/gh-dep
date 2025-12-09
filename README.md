@@ -132,7 +132,8 @@ Launch an interactive terminal UI for managing dependency PRs with:
 
 **Flags:**
 
-- `--author` - PR author to filter (default: `dependabot[bot]`, use `any` for all)
+- `--bot` - Dependency bot to target: `dependabot` (default) or `renovate` (skips author filter)
+- `--author` - PR author to filter (overrides `--bot`)
 - `--label` - PR label to filter
 - `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)
 - `--archived` - Include PRs from archived repositories (default: false)
@@ -151,6 +152,9 @@ gh dep --repo owner/app
 
 # Launch for entire organization with custom initial settings
 gh dep --owner myorg --merge-method rebase
+
+# Target Renovate PRs without remembering the login name
+gh dep --owner myorg --bot renovate
 
 # Start in merge mode instead of approve mode
 gh dep --repo owner/app --mode merge
@@ -176,8 +180,9 @@ gh dep list [flags]
 
 **Flags:**
 
+- `--bot` - Dependency bot to target: `dependabot` (default) or `renovate` (skips author filter)
+- `--author` - PR author to filter (overrides `--bot`)
 - `--label` - PR label to filter
-- `--author` - PR author to filter (default: `dependabot[bot]`, use `any` for all)
 - `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)
 - `--archived` - Include PRs from archived repositories (default: false)
 - `--group` - Group PRs by package@version and cache results

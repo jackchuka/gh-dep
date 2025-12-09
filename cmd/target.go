@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jackchuka/gh-dep/internal/config"
@@ -23,6 +24,23 @@ func resolveScope(cmd *cobra.Command, repoValue, ownerValue string, cfg *config.
 	}
 
 	return owner, repos
+}
+
+// resolveAuthor picks the effective author filter based on flags.
+// --author wins; otherwise --bot is mapped to a known login.
+func resolveAuthor(cmd *cobra.Command, authorValue, botValue string) (string, error) {
+	if cmd.Flags().Changed("author") {
+		return authorValue, nil
+	}
+
+	switch normalized := strings.TrimSpace(strings.ToLower(strings.TrimPrefix(botValue, "@"))); normalized {
+	case "", "dependabot", "dependabot[bot]":
+		return "dependabot[bot]", nil
+	case "renovate", "renovate[bot]":
+		return "renovate[bot]", nil
+	default:
+		return "", fmt.Errorf("invalid value for --bot: %q (expected dependabot or renovate)", botValue)
+	}
 }
 
 // cleanRepos splits comma-separated repos, trimming blanks.
