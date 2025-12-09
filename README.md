@@ -7,12 +7,6 @@ A GitHub CLI extension that streamlines the review and merge workflow for automa
 
 ![gh-dep demo](demo.gif)
 
-## [2025-10-20] Important Update: Dependabot mode Deprecation
-
-**GitHub is deprecating Dependabot comment commands on January 27, 2026** ([announcement](https://github.blog/changelog/2025-10-06-upcoming-changes-to-github-dependabot-pull-request-comment-commands/)). Commands like `@dependabot merge`, `@dependabot squash and merge`, etc. will no longer work.
-
-`gh-dep` will no longer support the Dependabot merge mode after v0.7.0.
-
 ## Features
 
 - 🖥️ **Interactive TUI**: Full-featured terminal UI with keyboard navigation and live settings adjustment
