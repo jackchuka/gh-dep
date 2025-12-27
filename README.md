@@ -344,15 +344,15 @@ Default output uses GitHub CLI's table formatter for clean, aligned columns:
 gh dep list
 # Output:
 # REPO                           PR     TITLE
-# tailor-platform/app-shell     #112   chore(deps-dev): bump tw-animate-css from 1.2.5 to 1.4.0
-# tailor-platform/app-shell     #111   chore(deps-dev): bump typescript-eslint from 8.28.0 to 8.44.1
+# cli/cli                       #112   Bump actions/setup-go from 5.0.1 to 6.0.0
+# cli/cli                       #111   Bump golang.org/x/net from 0.30.0 to 0.33.0
 
 # Grouped (single table)
 gh dep list --group
 # Output:
 # GROUP                          REPO           PR     URL
-# tw-animate-css@1.4.0          app-shell      #112   https://github.com/tailor-platform/app-shell/pull/112
-# typescript-eslint@8.44.1      app-shell      #111   https://github.com/tailor-platform/app-shell/pull/111
+# actions/setup-go@6.0.0        cli           #112   https://github.com/cli/cli/pull/112
+# golang.org/x/net@0.33.0       cli           #111   https://github.com/cli/cli/pull/111
 ```
 
 ### JSON Output
@@ -367,13 +367,13 @@ gh dep list --json
 gh dep list --group --json
 # Output:
 # {
-#   "tw-animate-css@1.4.0": [
+#   "actions/setup-go@6.0.0": [
 #     {
 #       "number": 112,
-#       "title": "chore(deps-dev): bump tw-animate-css from 1.2.5 to 1.4.0",
+#       "title": "Bump actions/setup-go from 5.0.1 to 6.0.0",
 #       "author": "dependabot[bot]",
-#       "repo": "tailor-platform/app-shell",
-#       "url": "https://github.com/tailor-platform/app-shell/pull/112"
+#       "repo": "cli/cli",
+#       "url": "https://github.com/cli/cli/pull/112"
 #     }
 #   ]
 # }
