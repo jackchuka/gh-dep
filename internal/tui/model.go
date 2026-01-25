@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jackchuka/gh-dep/internal/github"
+	"github.com/jackchuka/gh-dep/internal/parser"
 	"github.com/jackchuka/gh-dep/internal/types"
 )
 
@@ -59,6 +60,8 @@ type Model struct {
 	searchInput     textinput.Model
 	searching       bool
 	searchQuery     string
+	groupFilter     string   // current group filter key (e.g., "lodash@4.17.21")
+	customPatterns  []string // custom parsing patterns from config
 	executionResult []ExecutionResult
 	executing       bool
 	refetching      bool
@@ -80,6 +83,7 @@ type keyMap struct {
 	ToggleChecks  key.Binding
 	Execute       key.Binding
 	Search        key.Binding
+	GroupFilter   key.Binding
 	OpenBrowser   key.Binding
 	Refresh       key.Binding
 	Help          key.Binding
@@ -128,6 +132,10 @@ var keys = keyMap{
 	Search: key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "search"),
+	),
+	GroupFilter: key.NewBinding(
+		key.WithKeys("g"),
+		key.WithHelp("g", "filter same package"),
 	),
 	OpenBrowser: key.NewBinding(
 		key.WithKeys("o"),
@@ -203,24 +211,26 @@ var (
 			Foreground(lipgloss.Color("240"))
 )
 
-func NewModel(prs []types.PR, mergeMethod string, requireChecks bool, mode ExecutionMode, searchParams github.SearchParams) *Model {
+func NewModel(prs []types.PR, mergeMethod string, requireChecks bool, mode ExecutionMode, searchParams github.SearchParams, customPatterns []string) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Search PRs..."
 	ti.CharLimit = 100
 
 	m := &Model{
-		prs:           prs,
-		filteredPRs:   prs,
-		selected:      make(map[int]bool),
-		cursor:        0,
-		mode:          mode,
-		view:          ViewList,
-		searchInput:   ti,
-		searching:     false,
-		searchQuery:   "",
-		mergeMethod:   mergeMethod,
-		requireChecks: requireChecks,
-		searchParams:  searchParams,
+		prs:            prs,
+		filteredPRs:    prs,
+		selected:       make(map[int]bool),
+		cursor:         0,
+		mode:           mode,
+		view:           ViewList,
+		searchInput:    ti,
+		searching:      false,
+		searchQuery:    "",
+		groupFilter:    "",
+		customPatterns: customPatterns,
+		mergeMethod:    mergeMethod,
+		requireChecks:  requireChecks,
+		searchParams:   searchParams,
 	}
 
 	// Apply initial filtering based on requireChecks
@@ -348,6 +358,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searchInput.Focus()
 			return m, textinput.Blink
 
+		case key.Matches(msg, keys.GroupFilter):
+			if len(m.filteredPRs) > 0 && m.cursor < len(m.filteredPRs) {
+				currentPR := m.filteredPRs[m.cursor]
+				update := parser.ParseTitle(currentPR.Title, m.customPatterns)
+				groupKey := update.GroupKey()
+
+				// Toggle: if already filtering by this group, clear it
+				if m.groupFilter == groupKey {
+					m.groupFilter = ""
+				} else {
+					m.groupFilter = groupKey
+				}
+				m.filterPRs()
+				m.cursor = 0
+			}
+
 		case key.Matches(msg, keys.OpenBrowser):
 			if len(m.filteredPRs) > 0 && m.cursor < len(m.filteredPRs) {
 				return m, m.openPRInBrowser(m.filteredPRs[m.cursor])
@@ -448,6 +474,12 @@ func (m *Model) renderList() string {
 		s.WriteString("\n\n")
 	}
 
+	// Group filter indicator
+	if m.groupFilter != "" {
+		s.WriteString(helpStyle.Render(fmt.Sprintf("Group filter: %s (press g to clear)", m.groupFilter)))
+		s.WriteString("\n\n")
+	}
+
 	// PR list
 	s.WriteString(headerStyle.Render(fmt.Sprintf("PRs (%d selected / %d total):", m.countSelected(), len(m.filteredPRs))))
 	s.WriteString("\n\n")
@@ -493,7 +525,7 @@ func (m *Model) renderList() string {
 	s.WriteString("\n")
 	s.WriteString(helpStyle.Render("↑/↓: navigate • space: select • a: select all • d: deselect all • r: refresh"))
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("m/M/D/c: toggle settings • /: search • o: open • x: execute • ?: help • q: quit"))
+	s.WriteString(helpStyle.Render("m/M/c: toggle settings • /: search • g: group • o: open • x: execute • ?: help • q: quit"))
 
 	return s.String()
 }
@@ -593,7 +625,8 @@ func (m *Model) renderHelp() string {
 		{"M", "Toggle merge method (squash → merge → rebase)"},
 		{"c", "Toggle CI checks requirement"},
 		{"/", "Enter search mode"},
-		{"esc", "Cancel search"},
+		{"g", "Filter by same package@version (toggle)"},
+		{"esc", "Cancel search / clear filters"},
 		{"o", "Open current PR in browser"},
 		{"r", "Refresh PR list from GitHub"},
 		{"x", "Execute selected actions"},
@@ -651,6 +684,14 @@ func (m *Model) filterPRs() {
 	var filtered []types.PR
 
 	for _, pr := range m.prs {
+		// Filter by group (package@version) if set
+		if m.groupFilter != "" {
+			update := parser.ParseTitle(pr.Title, m.customPatterns)
+			if update.GroupKey() != m.groupFilter {
+				continue
+			}
+		}
+
 		// Filter by search query if present
 		if m.searchQuery != "" {
 			matchesSearch := strings.Contains(strings.ToLower(pr.Title), query) ||
@@ -679,6 +720,7 @@ func (m *Model) filterPRs() {
 func (m *Model) clearSearch() {
 	m.searching = false
 	m.searchQuery = ""
+	m.groupFilter = ""
 	m.searchInput.SetValue("")
 	m.searchInput.Blur()
 }

@@ -83,7 +83,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	// Launch TUI
-	model := tui.NewModel(allPRs, rootMergeMethod, rootRequireCheck, mode, searchParams)
+	model := tui.NewModel(allPRs, rootMergeMethod, rootRequireCheck, mode, searchParams, cfg.GetPatterns())
 
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
