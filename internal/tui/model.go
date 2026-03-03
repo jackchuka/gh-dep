@@ -635,10 +635,10 @@ func (m *Model) renderHelp() string {
 	}
 
 	for _, sh := range shortcuts {
-		s.WriteString(fmt.Sprintf("  %s - %s\n",
+		fmt.Fprintf(&s, "  %s - %s\n",
 			selectedStyle.Render(fmt.Sprintf("%-15s", sh.key)),
 			sh.desc,
-		))
+		)
 	}
 
 	s.WriteString("\n")
