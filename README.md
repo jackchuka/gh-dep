@@ -126,7 +126,7 @@ Launch an interactive terminal UI for managing dependency PRs with:
 
 **Flags:**
 
-- `--bot` - Dependency bot to target: `dependabot` (default) or `renovate` (skips author filter)
+- `--bot` - Dependency bot to target: `all` (default), `dependabot`, or `renovate`
 - `--author` - PR author to filter (overrides `--bot`)
 - `--label` - PR label to filter
 - `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)
@@ -141,14 +141,17 @@ Launch an interactive terminal UI for managing dependency PRs with:
 **Examples:**
 
 ```bash
-# Launch TUI for a single repo
+# Launch TUI for a single repo (fetches both Dependabot and Renovate PRs)
 gh dep --repo owner/app
 
 # Launch for entire organization with custom initial settings
 gh dep --owner myorg --merge-method rebase
 
-# Target Renovate PRs without remembering the login name
+# Target only Renovate PRs
 gh dep --owner myorg --bot renovate
+
+# Target only Dependabot PRs
+gh dep --owner myorg --bot dependabot
 
 # Start in merge mode instead of approve mode
 gh dep --repo owner/app --mode merge
@@ -174,7 +177,7 @@ gh dep list [flags]
 
 **Flags:**
 
-- `--bot` - Dependency bot to target: `dependabot` (default) or `renovate` (skips author filter)
+- `--bot` - Dependency bot to target: `all` (default), `dependabot`, or `renovate`
 - `--author` - PR author to filter (overrides `--bot`)
 - `--label` - PR label to filter
 - `--review-requested` - Filter PRs by review requested from user or team (e.g., `@me` or `username`)

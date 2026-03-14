@@ -46,7 +46,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 	}
 
 	owner, repos := resolveScope(cmd, rootRepo, rootOwner, cfg)
-	author, err := resolveAuthor(cmd, rootAuthor, rootBot)
+	authors, err := resolveAuthors(cmd, rootAuthor, rootBot)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func runRoot(cmd *cobra.Command, args []string) error {
 		Owner:           owner,
 		Repos:           repos,
 		Label:           rootLabel,
-		Author:          author,
+		Authors:         authors,
 		Limit:           rootLimit,
 		ReviewRequested: rootReviewRequested,
 		Archived:        rootArchived,
@@ -97,7 +97,7 @@ func init() {
 	rootCmd.Flags().IntVar(&rootLimit, "limit", 200, "Max PRs to fetch per repo")
 	rootCmd.Flags().StringVar(&rootLabel, "label", "", "PR label to filter")
 	rootCmd.Flags().StringVar(&rootAuthor, "author", "", "PR author to filter")
-	rootCmd.Flags().StringVar(&rootBot, "bot", "dependabot", "Dependency bot to target: dependabot or renovate (overridden by --author)")
+	rootCmd.Flags().StringVar(&rootBot, "bot", "all", "Dependency bot to target: all, dependabot, or renovate (overridden by --author)")
 	rootCmd.Flags().StringVarP(&rootRepo, "repo", "R", "", "Target repo(s), comma-separated")
 	rootCmd.Flags().StringVar(&rootOwner, "owner", "", "Target owner (user or org)")
 	rootCmd.Flags().StringVar(&rootMergeMethod, "merge-method", "squash", "Merge method: merge, squash, or rebase")

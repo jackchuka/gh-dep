@@ -68,8 +68,60 @@ func TestResolveScopeKeepsExplicitOwner(t *testing.T) {
 	}
 }
 
+func TestResolveAuthorsDefaultsBothBots(t *testing.T) {
+	c := newTestCommand()
+	authors, err := resolveAuthors(c, "", "all")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := []string{"dependabot[bot]", "renovate[bot]"}
+	if !slices.Equal(authors, expected) {
+		t.Fatalf("expected %v, got %v", expected, authors)
+	}
+}
+
+func TestResolveAuthorsSingleBot(t *testing.T) {
+	tests := []struct {
+		name     string
+		bot      string
+		expected []string
+	}{
+		{"dependabot", "dependabot", []string{"dependabot[bot]"}},
+		{"renovate", "renovate", []string{"renovate[bot]"}},
+		{"both", "both", []string{"dependabot[bot]", "renovate[bot]"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestCommand()
+			authors, err := resolveAuthors(c, "", tt.bot)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !slices.Equal(authors, tt.expected) {
+				t.Fatalf("expected %v, got %v", tt.expected, authors)
+			}
+		})
+	}
+}
+
+func TestResolveAuthorsAuthorFlagOverrides(t *testing.T) {
+	c := newTestCommand()
+	if err := c.Flags().Set("author", "someuser"); err != nil {
+		t.Fatalf("failed to set author flag: %v", err)
+	}
+	authors, err := resolveAuthors(c, "someuser", "all")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expected := []string{"someuser"}
+	if !slices.Equal(authors, expected) {
+		t.Fatalf("expected %v, got %v", expected, authors)
+	}
+}
+
 func newTestCommand() *cobra.Command {
 	c := &cobra.Command{}
 	c.Flags().String("repo", "", "")
+	c.Flags().String("author", "", "")
 	return c
 }

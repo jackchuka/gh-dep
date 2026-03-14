@@ -22,35 +22,83 @@ type SearchParams struct {
 	Owner           string
 	Repos           []string
 	Label           string
-	Author          string
+	Authors         []string
 	Limit           int
 	ReviewRequested string
 	Archived        bool
 }
 
-// SearchPRs searches for PRs based on the given parameters
+// SearchPRs searches for PRs based on the given parameters.
+// When multiple authors are specified, runs one search per author and merges results.
 func SearchPRs(params SearchParams) ([]types.PR, error) {
+	authors := params.Authors
+	if len(authors) == 0 {
+		authors = []string{""}
+	}
+
+	var allPRs []types.PR
+	seen := make(map[string]bool)
+
+	for _, author := range authors {
+		prs, err := searchPRsForAuthor(params, author)
+		if err != nil {
+			return nil, err
+		}
+		for _, pr := range prs {
+			key := fmt.Sprintf("%s#%d", pr.Repo, pr.Number)
+			if !seen[key] {
+				seen[key] = true
+				allPRs = append(allPRs, pr)
+			}
+		}
+	}
+
+	// Fetch CI status concurrently with worker pool
+	const maxWorkers = 10
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, maxWorkers)
+
+	for i := range allPRs {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			semaphore <- struct{}{}        // Acquire
+			defer func() { <-semaphore }() // Release
+
+			headSHA, err := GetPRHead(allPRs[idx].Repo, allPRs[idx].Number)
+			if err == nil {
+				allPRs[idx].HeadSHA = headSHA
+				ciStatus, err := GetCIStatus(allPRs[idx].Repo, headSHA)
+				if err == nil && ciStatus != nil {
+					allPRs[idx].CIStatus = ciStatus.State
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	return allPRs, nil
+}
+
+func searchPRsForAuthor(params SearchParams, author string) ([]types.PR, error) {
 	args := []string{"search", "prs", "is:open"}
 
 	if params.Owner != "" {
 		args = append(args, "--owner", params.Owner)
 	}
-	if len(params.Repos) > 0 {
-		for _, repo := range params.Repos {
-			args = append(args, "--repo", repo)
-		}
+	for _, repo := range params.Repos {
+		args = append(args, "--repo", repo)
 	}
 
 	if params.Label != "" {
 		args = append(args, "--label", params.Label)
 	}
-	if params.Author != "" && params.Author != "any" {
-		args = append(args, "--author", params.Author)
+	if author != "" {
+		args = append(args, "--author", author)
 	}
 	if params.ReviewRequested != "" {
 		args = append(args, "--review-requested", params.ReviewRequested)
 	}
-	// Only include archived repos if explicitly requested
 	if !params.Archived {
 		args = append(args, fmt.Sprintf("--archived=%t", params.Archived))
 	}
@@ -80,7 +128,6 @@ func SearchPRs(params SearchParams) ([]types.PR, error) {
 		return nil, fmt.Errorf("failed to parse search results: %w", err)
 	}
 
-	// Convert raw PRs to types.PR first
 	prs := make([]types.PR, len(rawPRs))
 	for i, raw := range rawPRs {
 		prs[i] = types.PR{
@@ -92,31 +139,6 @@ func SearchPRs(params SearchParams) ([]types.PR, error) {
 		}
 	}
 
-	// Fetch CI status concurrently with worker pool
-	const maxWorkers = 10
-	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, maxWorkers)
-
-	for i := range prs {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-			semaphore <- struct{}{}        // Acquire
-			defer func() { <-semaphore }() // Release
-
-			// Fetch HEAD SHA and CI status
-			headSHA, err := GetPRHead(prs[idx].Repo, prs[idx].Number)
-			if err == nil {
-				prs[idx].HeadSHA = headSHA
-				ciStatus, err := GetCIStatus(prs[idx].Repo, headSHA)
-				if err == nil && ciStatus != nil {
-					prs[idx].CIStatus = ciStatus.State
-				}
-			}
-		}(i)
-	}
-
-	wg.Wait()
 	return prs, nil
 }
 
