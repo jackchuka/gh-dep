@@ -26,20 +26,22 @@ func resolveScope(cmd *cobra.Command, repoValue, ownerValue string, cfg *config.
 	return owner, repos
 }
 
-// resolveAuthor picks the effective author filter based on flags.
-// --author wins; otherwise --bot is mapped to a known login.
-func resolveAuthor(cmd *cobra.Command, authorValue, botValue string) (string, error) {
+// resolveAuthors picks the effective author filters based on flags.
+// --author wins; otherwise --bot is mapped to known logins.
+func resolveAuthors(cmd *cobra.Command, authorValue, botValue string) ([]string, error) {
 	if cmd.Flags().Changed("author") {
-		return authorValue, nil
+		return []string{authorValue}, nil
 	}
 
 	switch normalized := strings.TrimSpace(strings.ToLower(strings.TrimPrefix(botValue, "@"))); normalized {
-	case "", "dependabot", "dependabot[bot]":
-		return "dependabot[bot]", nil
+	case "all", "both", "":
+		return []string{"dependabot[bot]", "renovate[bot]"}, nil
+	case "dependabot", "dependabot[bot]":
+		return []string{"dependabot[bot]"}, nil
 	case "renovate", "renovate[bot]":
-		return "renovate[bot]", nil
+		return []string{"renovate[bot]"}, nil
 	default:
-		return "", fmt.Errorf("invalid value for --bot: %q (expected dependabot or renovate)", botValue)
+		return nil, fmt.Errorf("invalid value for --bot: %q (expected all, dependabot, or renovate)", botValue)
 	}
 }
 
