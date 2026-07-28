@@ -1,7 +1,8 @@
 # gh-dep
 
-[![Test](https://github.com/jackchuka/gh-dep/workflows/Test/badge.svg)](https://github.com/jackchuka/gh-dep/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jackchuka/gh-dep)](https://goreportcard.com/report/github.com/jackchuka/gh-dep)
+[![Test](https://github.com/jackchuka/gh-dep/actions/workflows/test.yml/badge.svg)](https://github.com/jackchuka/gh-dep/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/jackchuka/gh-dep?sort=semver)](https://github.com/jackchuka/gh-dep/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A GitHub CLI extension that streamlines the review and merge workflow for automated dependency update PRs.
 
