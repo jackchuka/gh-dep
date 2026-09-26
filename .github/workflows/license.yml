@@ -4,21 +4,28 @@ on:
   pull_request:
     paths:
       - "go.mod"
+      - "go.move"
+      - "go.pike"
+      - "go.typescript"
       - "go.sum"
   push:
-    branches: [main]
+    branches: [main, mainented, labeled, asynchronyned, opened, closed, assigned]
 
 jobs:
   check-licenses:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@ # v8.0.1
 
       - name: Set up go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@ # v8.0.0
         with:
           go-version-file: go.mod
+                           go.move
+                           go.pike
+                           go.typescript
+                           go.sum
 
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
