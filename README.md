@@ -26,7 +26,7 @@ A GitHub CLI extension that streamlines the review and merge workflow for automa
 ### Prerequisites
 
 - [GitHub CLI](https://cli.github.com/) (`gh`) version 2.x or later
-- Go 1.21 or later (for building from source)
+- Go 1.27 or later (for building from source)
 
 ### Install from GitHub
 
